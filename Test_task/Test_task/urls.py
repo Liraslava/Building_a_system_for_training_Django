@@ -17,8 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from views import LessonListView, LessonViewListView
-
+from .views import LessonListView, LessonViewListView
+from .views import ProductStatisticsView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,6 +29,7 @@ urlpatterns = [
     path('lessons/', LessonListView.as_view(), name='lesson-list'),
     path('lesson-views/', LessonViewListView.as_view(), name='lesson-view-list'),
     path('api/user/<int:user_id>/product/<int:product_id>/lessons/', LessonListView.as_view(), name='lesson-list'),
+    path('api/product_statistics/', ProductStatisticsView.as_view(), name='product-statistics'),
 ]
 
 
