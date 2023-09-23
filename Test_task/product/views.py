@@ -6,6 +6,10 @@ from .models import Lesson, Product, User
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.db.models import Count, Sum, F
+from django.db.models.functions import Coalesce
+from django.db.models import FloatField
+from decimal import Decimal
 
 class LessonListView(generics.ListAPIView):
     serializer_class = LessonSerializer
@@ -34,7 +38,7 @@ class LessonListViewStatus(APIView):
             user_profile = User.objects.get(user_id=user_id)
             product = Product.objects.get(id=product_id)
 
-
+            # check if the user has access to the product
             if product not in user_profile.products_access.all():
                 return Response({'error': 'Пользователь не имеет доступ к данному продукту'}, status=status.HTTP_403_FORBIDDEN)
 
@@ -46,3 +50,35 @@ class LessonListViewStatus(APIView):
             return Response({'error': 'Пользователь не найден'}, status=status.HTTP_404_NOT_FOUND)
         except Product.DoesNotExist:
             return Response({'error': 'Продукт не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+    def update_watched_status(self):
+        # here, implement the logic to determine the "Viewed" status based on the percentage of views
+        if self.watched_percentage >= 80:
+            self.watched = True
+        else:
+            self.watched = False
+        self.save()
+
+
+
+# this view will collect statistics on products
+class ProductStatisticsView(APIView):
+    def get(self, request):
+        products = Product.objects.all()
+
+        product_statistics = []
+        total_users = User.objects.count()
+
+        for product in products:
+            product_data = {
+                'product_id': product.id,
+                'product_name': product.name,
+                'total_lessons_viewed': Lesson.objects.filter(product=product).aggregate(total_lessons_viewed=Count('id'))['total_lessons_viewed'],
+                'total_time_spent_minutes': Lesson.objects.filter(product=product).aggregate(total_time_spent_minutes=Coalesce(Sum('view_time_minutes'), 0, output_field=FloatField()))['total_time_spent_minutes'],
+                'total_users_enrolled': User.objects.filter(products_access=product).count(),
+                'percent_acquisition': Decimal(User.objects.filter(products_access=product).count() / total_users * 100).quantize(Decimal('0.00')),
+            }
+
+            product_statistics.append(product_data)
+
+        return Response(product_statistics)

@@ -1,6 +1,10 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User  # We use the standard Django user model
+from .serializers import LessonSerializer
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 
 #  creating a user entity
 # class User(models.Model):
@@ -43,15 +47,6 @@ class LessonView(models.Model):
     watched = models.BooleanField(default=False)  # Status "Viewed"/"Not viewed"
     watched_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)  # Viewing percentage
     timestamp = models.DateTimeField(auto_now=True)
-
-
-    def update_watched_status(self):
-        # here, implement the logic to determine the "Viewed" status based on the percentage of views
-        if self.watched_percentage >= 80:
-            self.watched = True
-        else:
-            self.watched = False
-        self.save()
 
 
 
